@@ -1,4 +1,4 @@
-#include "QuestItemIcon.h"
+#include "ItemIcon.h"
 
 #include "../../config/ConfigManager.h"
 #include "../../swfhelper/ImportData.h"
@@ -21,7 +21,7 @@ static void InventoryScaleform(RE::GFxMovieView* a_view, RE::GFxValue* a_object,
 	return;
 }
 
-void QuestItemIcon::Install()
+void ItemIcon::Install()
 {
 	REL::Relocation<std::uintptr_t> Inv{ RE::VTABLE_InventoryMenu[0] };
 	_PostCreateInv = Inv.write_vfunc(0x2, &PostCreateInv);
@@ -29,10 +29,16 @@ void QuestItemIcon::Install()
 	REL::Relocation<std::uintptr_t> Cont{ RE::VTABLE_ContainerMenu[0] };
 	_PostCreateCont = Cont.write_vfunc(0x2, &PostCreateCont);
 
+	REL::Relocation<std::uintptr_t> Bart{ RE::VTABLE_BarterMenu[0] };
+	_PostCreateBart = Bart.write_vfunc(0x2, &PostCreateBart);
+
+	REL::Relocation<std::uintptr_t> Gift{ RE::VTABLE_GiftMenu[0] };
+	_PostCreateGift = Gift.write_vfunc(0x2, &PostCreateGift);
+
 	SKSE::GetScaleformInterface()->Register(InventoryScaleform);
 }
 
-void QuestItemIcon::InstallLate()
+void ItemIcon::InstallLate()
 {
 	Config::ConfigManager::getInstance()->LoadConfigs();
 
@@ -95,6 +101,11 @@ public:
 				a_params.thisPtr->GetMember(iconName.GetString(), &Icon);
 				if (Icon.IsUndefined()) {
 					a_params.thisPtr->AttachMovie(&Icon, iconName.GetString(), iconName.GetString());
+
+					if (Icon.IsUndefined()) {
+						logger::error("Failed to attach icon {}", iconName.GetString());
+						continue;
+					}
 
 					//Set height width only needed once
 					{
@@ -184,14 +195,26 @@ static void Setup(RE::IMenu* thiz){
 	}
 }
 
-void QuestItemIcon::PostCreateInv(RE::IMenu* thiz)
+void ItemIcon::PostCreateInv(RE::IMenu* thiz)
 {
 	Setup(thiz);
 	return _PostCreateInv(thiz);
 }
 
-void QuestItemIcon::PostCreateCont(RE::IMenu* thiz)
+void ItemIcon::PostCreateCont(RE::IMenu* thiz)
 {
 	Setup(thiz);
 	return _PostCreateCont(thiz);
+}
+
+void ItemIcon::PostCreateBart(RE::IMenu* thiz)
+{
+	Setup(thiz);
+	return _PostCreateBart(thiz);
+}
+
+void ItemIcon::PostCreateGift(RE::IMenu* thiz)
+{
+	Setup(thiz);
+	return _PostCreateGift(thiz);
 }

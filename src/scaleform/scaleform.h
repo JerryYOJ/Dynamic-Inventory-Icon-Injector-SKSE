@@ -1,15 +1,15 @@
-#include "QuestItemIcon/QuestItemIcon.h"
+#include "ItemIcon/ItemIcon.h"
 
 namespace Scaleform {
 	void Install() {
 
-		QuestItemIcon::Install();
+		ItemIcon::Install();
 
 	}
 
 	void InstallLate() {
 
-		QuestItemIcon::InstallLate();
+		ItemIcon::InstallLate();
 
 	}
 }
