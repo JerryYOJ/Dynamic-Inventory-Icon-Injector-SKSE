@@ -1,0 +1,451 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "DIII Config",
+	"description": "Dynamic Inventory Icon Injector rule configuration",
+	"type": "object",
+	"required": [
+		"rules"
+	],
+	"properties": {
+		"rules": {
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/rule"
+			}
+		}
+	},
+	"$defs": {
+		"rule": {
+			"type": "object",
+			"required": [
+				"icon",
+				"match"
+			],
+			"properties": {
+				"icon": {
+					"$ref": "#/$defs/icon"
+				},
+				"match": {
+					"$ref": "#/$defs/match"
+				}
+			}
+		},
+		"icon": {
+			"type": "object",
+			"required": [
+				"source",
+				"label"
+			],
+			"properties": {
+				"source": {
+					"type": "string",
+					"description": "SWF path relative to Interface/ (e.g. DIII/myIcons.swf)"
+				},
+				"label": {
+					"type": "string",
+					"description": "Export name inside the SWF"
+				}
+			}
+		},
+		"numberOrRange": {
+			"oneOf": [
+				{
+					"type": "number"
+				},
+				{
+					"type": "object",
+					"properties": {
+						"min": {
+							"type": "number"
+						},
+						"max": {
+							"type": "number"
+						}
+					},
+					"minProperties": 1
+				}
+			]
+		},
+		"formIdValue": {
+			"description": "FormID as \"PluginName|0xRawID\", or array of them",
+			"oneOf": [
+				{
+					"type": "string",
+					"pattern": "^.+\\|0x[0-9A-Fa-f]+$"
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string",
+						"pattern": "^.+\\|0x[0-9A-Fa-f]+$"
+					}
+				},
+				{
+					"type": "object",
+					"properties": {
+						"anyOf": {
+							"type": "array",
+							"items": {
+								"type": "string",
+								"pattern": "^.+\\|0x[0-9A-Fa-f]+$"
+							}
+						}
+					}
+				}
+			]
+		},
+		"keywordsValue": {
+			"description": "Editor ID string or array of editor IDs (array = AND)",
+			"oneOf": [
+				{
+					"type": "string"
+				},
+				{
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			]
+		},
+		"effectMatchers": {
+			"type": "object",
+			"description": "All matchers use AND logic. Matches if ANY single effect satisfies all matchers.",
+			"properties": {
+				"effectId": {
+					"$ref": "#/$defs/formIdValue"
+				},
+				"school": {
+					"type": "string",
+					"enum": [
+						"Alteration",
+						"Conjuration",
+						"Destruction",
+						"Illusion",
+						"Restoration"
+					]
+				},
+				"magnitude": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"duration": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"area": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"archetype": {
+					"type": "string",
+					"enum": [
+						"ValueModifier",
+						"Script",
+						"Dispel",
+						"CureDisease",
+						"Absorb",
+						"DualValueModifier",
+						"Calm",
+						"Demoralize",
+						"Frenzy",
+						"Disarm",
+						"CommandSummoned",
+						"Invisibility",
+						"Light",
+						"Lock",
+						"Open",
+						"BoundWeapon",
+						"SummonCreature",
+						"DetectLife",
+						"Telekinesis",
+						"Paralysis",
+						"Reanimate",
+						"SoulTrap",
+						"TurnUndead",
+						"Guide",
+						"Cloak",
+						"SlowTime",
+						"Rally",
+						"EnhanceWeapon",
+						"SpawnHazard",
+						"Etherealize",
+						"Banish",
+						"Disguise",
+						"PeakValueModifier"
+					]
+				},
+				"deliveryType": {
+					"type": "string",
+					"enum": [
+						"Self",
+						"Touch",
+						"Aimed",
+						"TargetActor",
+						"TargetLocation"
+					]
+				},
+				"castType": {
+					"type": "string",
+					"enum": [
+						"ConstantEffect",
+						"FireAndForget",
+						"Concentration",
+						"Scroll"
+					]
+				},
+				"primaryValue": {
+					"type": "string",
+					"enum": [
+						"Health",
+						"Magicka",
+						"Stamina",
+						"HealRate",
+						"MagickaRate",
+						"StaminaRate",
+						"SpeedMult",
+						"CarryWeight",
+						"OneHanded",
+						"TwoHanded",
+						"Marksman",
+						"Block",
+						"Smithing",
+						"HeavyArmor",
+						"LightArmor",
+						"Pickpocket",
+						"Lockpicking",
+						"Sneak",
+						"Alchemy",
+						"Speechcraft",
+						"Alteration",
+						"Conjuration",
+						"Destruction",
+						"Illusion",
+						"Restoration",
+						"Enchanting"
+					]
+				},
+				"resistance": {
+					"type": "string",
+					"enum": [
+						"DamageResist",
+						"PoisonResist",
+						"FireResist",
+						"ElectricResist",
+						"FrostResist",
+						"MagicResist",
+						"DiseaseResist"
+					]
+				},
+				"effectFlags": {
+					"description": "Single flag string or array of flags (combined with OR)",
+					"oneOf": [
+						{
+							"type": "string",
+							"enum": [
+								"Hostile",
+								"Recover",
+								"Detrimental",
+								"NoDuration",
+								"NoArea",
+								"FXPersist",
+								"GoryVisuals",
+								"HideInUI",
+								"Painless",
+								"NoHitEffect",
+								"NoDeathDispel",
+								"PowerAffectsMagnitude",
+								"PowerAffectsDuration"
+							]
+						},
+						{
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					]
+				},
+				"effectKeywords": {
+					"type": "string",
+					"description": "Editor ID of a keyword on the base effect"
+				},
+				"skillLevel": {
+					"$ref": "#/$defs/numberOrRange"
+				}
+			},
+			"additionalProperties": false
+		},
+		"match": {
+			"type": "object",
+			"description": "All fields use AND logic. Fields starting with $ are ignored.",
+			"properties": {
+				"formType": {
+					"type": "string",
+					"enum": [
+						"Ammo",
+						"Armor",
+						"Book",
+						"Ingredient",
+						"Key",
+						"MiscItem",
+						"Potion",
+						"Scroll",
+						"SoulGem",
+						"Weapon"
+					]
+				},
+				"formId": {
+					"$ref": "#/$defs/formIdValue"
+				},
+				"keywords": {
+					"$ref": "#/$defs/keywordsValue"
+				},
+				"isStolen": {
+					"type": "boolean"
+				},
+				"isFavorited": {
+					"type": "boolean"
+				},
+				"isQuestItem": {
+					"type": "boolean"
+				},
+				"goldValue": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"weight": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"weaponType": {
+					"type": "string",
+					"enum": [
+						"HandToHandMelee",
+						"OneHandSword",
+						"OneHandDagger",
+						"OneHandAxe",
+						"OneHandMace",
+						"TwoHandSword",
+						"TwoHandAxe",
+						"Bow",
+						"Staff",
+						"Crossbow"
+					]
+				},
+				"baseDamage": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"speed": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"reach": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"stagger": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"critDamage": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"weightClass": {
+					"type": "string",
+					"enum": [
+						"Light",
+						"Heavy",
+						"Clothing"
+					]
+				},
+				"armorRating": {
+					"$ref": "#/$defs/numberOrRange"
+				},
+				"mainPart": {
+					"type": "integer",
+					"minimum": 30,
+					"maximum": 61,
+					"description": "Biped slot number (30=Head, 32=Body, 33=Hands, etc.)"
+				},
+				"potionType": {
+					"type": "string",
+					"enum": [
+						"Food",
+						"Poison",
+						"Medicine"
+					]
+				},
+				"gemSize": {
+					"type": "string",
+					"enum": [
+						"None",
+						"Petty",
+						"Lesser",
+						"Common",
+						"Greater",
+						"Grand"
+					]
+				},
+				"soulSize": {
+					"type": "string",
+					"enum": [
+						"None",
+						"Petty",
+						"Lesser",
+						"Common",
+						"Greater",
+						"Grand"
+					]
+				},
+				"teachesSpell": {
+					"type": "boolean"
+				},
+				"teachesSkill": {
+					"type": "string",
+					"enum": [
+						"OneHanded",
+						"TwoHanded",
+						"Marksman",
+						"Block",
+						"Smithing",
+						"HeavyArmor",
+						"LightArmor",
+						"Pickpocket",
+						"Lockpicking",
+						"Sneak",
+						"Alchemy",
+						"Speechcraft",
+						"Alteration",
+						"Conjuration",
+						"Destruction",
+						"Illusion",
+						"Restoration",
+						"Enchanting"
+					]
+				},
+				"isRead": {
+					"type": "boolean"
+				},
+				"enchantment": {
+					"$ref": "#/$defs/effectMatchers"
+				},
+				"poison": {
+					"$ref": "#/$defs/effectMatchers"
+				},
+				"tempered": {
+					"type": "object",
+					"properties": {
+						"min": {
+							"type": "number"
+						},
+						"max": {
+							"type": "number"
+						}
+					},
+					"minProperties": 1
+				},
+				"magicEffect": {
+					"$ref": "#/$defs/effectMatchers"
+				},
+				"not": {
+					"description": "Negates the inner conditions (AND combined, then negated)",
+					"$ref": "#/$defs/match"
+				}
+			},
+			"additionalProperties": false
+		}
+	}
+}

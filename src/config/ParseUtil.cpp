@@ -51,11 +51,6 @@ namespace Config {
 						result.push_back(id);
 				}
 			}
-		} else if (a_value.isObject()) {
-			const auto &anyOf = a_value["anyOf"];
-			if (anyOf.isArray()) {
-				return ParseFormIDArray(anyOf);
-			}
 		}
 
 		return result;

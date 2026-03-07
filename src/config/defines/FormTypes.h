@@ -16,7 +16,7 @@ namespace Config {
 	inline const EnumMap<RE::FormType> FormTypeMap = {
 		{"Ammo", RE::FormType::Ammo},     {"Armor", RE::FormType::Armor},
 		{"Book", RE::FormType::Book},     {"Ingredient", RE::FormType::Ingredient},
-		{"Key", RE::FormType::KeyMaster}, {"Light", RE::FormType::Light},
+		{"Key", RE::FormType::KeyMaster},
 		{"MiscItem", RE::FormType::Misc}, {"Potion", RE::FormType::AlchemyItem},
 		{"Scroll", RE::FormType::Scroll}, {"SoulGem", RE::FormType::SoulGem},
 		{"Weapon", RE::FormType::Weapon},
