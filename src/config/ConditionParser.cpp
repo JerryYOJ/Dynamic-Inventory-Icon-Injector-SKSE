@@ -618,20 +618,7 @@ namespace Config {
 								size, [](RE::InventoryEntryData *e) -> RE::SOUL_LEVEL {
 									if (!e || !e->object)
 										return RE::SOUL_LEVEL::kNone;
-									auto *gem = e->object->As<RE::TESSoulGem>();
-									if (!gem)
-										return RE::SOUL_LEVEL::kNone;
-									// Check ExtraSoul for current soul
-									if (e->extraLists) {
-										for (auto *list : *e->extraLists) {
-											if (!list)
-												continue;
-											auto *extraSoul = list->GetByType<RE::ExtraSoul>();
-											if (extraSoul)
-												return extraSoul->GetContainedSoul();
-										}
-									}
-									return RE::SOUL_LEVEL::kNone;
+									return e->GetSoulLevel();
 								});
 					}
 					return nullptr;
