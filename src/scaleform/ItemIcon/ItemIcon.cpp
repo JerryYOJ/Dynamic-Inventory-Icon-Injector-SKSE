@@ -3,6 +3,7 @@
 #include "../../config/ConfigManager.h"
 #include "../../swfhelper/ImportData.h"
 
+//this global is required to make string_view work dont remove
 std::unordered_map<std::string, std::unordered_set<std::string>> registeredIcons;
 std::vector<std::string> registeredExports;
 std::vector<ImportData::loadReq> loadRequest;
@@ -15,7 +16,15 @@ static void InventoryScaleform(RE::GFxMovieView* a_view, RE::GFxValue* a_object,
 	RE::GFxValue iconArr;
 	a_view->CreateArray(&iconArr);
 	iconArr.SetArraySize(static_cast<std::uint32_t>(icons.size()));
-	for (std::uint32_t idx = 0; idx < icons.size(); idx++) iconArr.SetElement(idx, icons[idx]->label.data());
+	for (std::uint32_t idx = 0; idx < icons.size(); idx++) {
+		RE::GFxValue iconData;
+		a_view->CreateObject(&iconData);
+
+		iconData.SetMember("label", icons[idx]->label.data());
+		if(!icons[idx]->replace.empty()) iconData.SetMember("replace", icons[idx]->replace.data());
+
+		iconArr.SetElement(idx, iconData);
+	}
 	a_object->SetMember("_DIIIIcons", iconArr);
 
 	return;
@@ -79,6 +88,8 @@ public:
 			RE::GFxValue name;
 			a_entryObject.GetMember("text", &name);
 
+
+
 			//Hide previous icons
 			for (auto&& it : registeredExports) {
 				RE::GFxValue Icon;
@@ -87,15 +98,55 @@ public:
 				Icon.SetMember("_visible", false);
 			}
 
+			//Calculate icon positions and reset vanilla icon
+			auto iconY = entryHeight.GetNumber() * 0.25;
+
+			RE::GFxValue textField, textWidth, textX;
+
+			a_entryField.GetMember("_width", &textWidth);
+			a_entryField.GetMember("_x", &textX);
+
+			auto iconPos = textX.GetNumber() + textWidth.GetNumber() + 5.0;
+			auto iconSpace = entryHeight.GetNumber() * 0.625;
+
+			
+			static constexpr std::array vanillaIcons{
+				"bestIcon", "favoriteIcon", "poisonIcon",
+				"stolenIcon", "enchIcon", "readIcon"
+			};
+			for (auto&& name : vanillaIcons) {
+				RE::GFxValue icon;
+				a_params.thisPtr->GetMember(name, &icon);
+
+				if (icon.IsUndefined()) {
+					logger::critical("Failed to find vanilla icon {}???", name);
+					continue;
+				}
+
+				icon.SetMember("_visible", true);
+
+				RE::GFxValue currentFrame;
+				icon.GetMember("_currentframe", &currentFrame);
+
+				if (currentFrame.IsNumber() && currentFrame.GetNumber() == 2) {
+					iconPos += iconSpace;
+				}
+			}
+
 			//Show matched icons
 			RE::GFxValue iconArr;
 			a_entryObject.GetMember("_DIIIIcons", &iconArr);
 
 			if (iconArr.IsUndefined()) return;
 
-			for (std::uint32_t idx = 0, size = iconArr.GetArraySize(); idx < size; idx++) {
+			for (std::uint32_t idx = 0, append_idx = 0, size = iconArr.GetArraySize(); idx < size; idx++) {
+				RE::GFxValue iconData;
+				iconArr.GetElement(idx, &iconData);
+
 				RE::GFxValue iconName;
-				iconArr.GetElement(idx, &iconName);
+				iconData.GetMember("label", &iconName);
+				RE::GFxValue replace;
+				iconData.GetMember("replace", &replace);
 
 				RE::GFxValue Icon;
 				a_params.thisPtr->GetMember(iconName.GetString(), &Icon);
@@ -120,42 +171,46 @@ public:
 					}
 				}
 
-				//Set visibility
-				{
-					Icon.SetMember("_visible", true);
+				if (replace.IsUndefined()) {
+					//Set visibility
+					{
+						Icon.SetMember("_visible", true);
+					}
+
+					//Set icon position
+					{
+						auto iconX = iconPos + (iconSpace * append_idx);
+
+						Icon.SetMember("_y", iconY);
+						Icon.SetMember("_x", iconX);
+					}
+
+					append_idx++;
 				}
+				else {
+					RE::GFxValue replacedIcon;
+					a_params.thisPtr->GetMember(replace.GetString(), &replacedIcon);
 
-				//Set icon position
-				{
-					auto iconY = entryHeight.GetNumber() * 0.25;
-
-					RE::GFxValue textField, textWidth, textX;
-
-					a_entryField.GetMember("_width", &textWidth);
-					a_entryField.GetMember("_x", &textX);
-
-					auto iconPos = textX.GetNumber() + textWidth.GetNumber() + 5.0;
-					auto iconSpace = entryHeight.GetNumber() * 0.625;
-
-					//excluded stolen for this cuz its more complicated
-					static constexpr std::array flags{ "bestInClass","favorite","isPoisoned","isEnchanted", "isRead" };
-					for (auto&& flag : flags) {
-						RE::GFxValue f;
-						a_entryObject.GetMember(flag, &f);
-						if (f.IsBool() && f.GetBool()) iconPos += iconSpace;
-						else if (f.IsNumber() && f.GetNumber() == 1) iconPos += iconSpace;
-					}
-					RE::GFxValue steal, showsteal;
-					a_state.GetMember("showStolenIcon", &showsteal);
-					if (showsteal.IsBool()) {
-						if (a_entryObject.GetMember("isStolen", &steal); steal.IsBool() && steal.GetBool() && showsteal.GetBool()) iconPos += iconSpace;
-						else if (a_entryObject.GetMember("isStealing", &steal); steal.IsBool() && steal.GetBool() && showsteal.GetBool()) iconPos += iconSpace;
+					if (replacedIcon.IsUndefined()) {
+						logger::error("Failed to find replace icon {}, make sure the label is correct and the icon is attached to the movie", replace.GetString());
+						continue;
 					}
 
-					iconPos += idx * iconSpace;
+					//Set visibility
+					{
+						replacedIcon.SetMember("_visible", false);
+						Icon.SetMember("_visible", true);
+					}
 
-					Icon.SetMember("_y", iconY);
-					Icon.SetMember("_x", iconPos);
+					//Set icon position
+					{
+						RE::GFxValue replaceY, replaceX;
+						replacedIcon.GetMember("_y", &replaceY);
+						replacedIcon.GetMember("_x", &replaceX);
+
+						Icon.SetMember("_y", replaceY);
+						Icon.SetMember("_x", replaceX);
+					}
 				}
 			}
 		}

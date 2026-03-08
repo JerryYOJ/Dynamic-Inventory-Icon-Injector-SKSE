@@ -6,7 +6,7 @@ namespace Config {
     struct IconData {
         std::string source; // SWF path
         std::string label;  // Export label
-        // int priority = 0;   // TODO: priority system TBD
+        std::string replace; // Empty = append, or vanilla icon name to replace
     };
 
     class Rule {

@@ -3,7 +3,12 @@
 DIII uses JSON rule files to define which icons appear on which inventory items. Place your config files in:
 
 ```
-Data/SKSE/Plugins/DIII/*.json
+SKSE/Plugins/DIII/*.json
+```
+
+and your swf files in:
+```
+Interface/
 ```
 
 All `.json` files in this folder are loaded automatically on game startup. You can split rules across multiple files for organization.
@@ -12,11 +17,11 @@ All `.json` files in this folder are loaded automatically on game startup. You c
 
 ```json
 {
-  "$schema": "./schema.json",
+  "$schema": "https://raw.githubusercontent.com/JerryYOJ/Dynamic-Inventory-Icon-Injector-SKSE/refs/heads/master/schema.json",
   "rules": [
     {
       "icon": {
-        "source": "DIII/myIcons.swf",
+        "source": "CustomFolderNameOptional/myIcons.swf",
         "label": "QuestItemIcon"
       },
       "match": {
@@ -46,6 +51,7 @@ Each rule has two parts:
 |---|---|---|
 | `source` | ✅ | SWF file path relative to `Interface/` |
 | `label` | ✅ | Export name inside the SWF |
+| `replace` | ❌ | Vanilla icon instance name to replace (e.g. `"enchantIcon"`) |
 
 ### Match
 
@@ -60,13 +66,14 @@ All conditions within a single rule use **AND** logic — every condition must p
 | Field | Type | Example | Description |
 |---|---|---|---|
 | `formType` | string | `"Weapon"` | Item category |
-| `formId` | string / array | `"Skyrim.esm\|0x12EB7"` | Specific form(s) |
+| `formId` | string / array | `"Skyrim.esm\|0x12EB7"` | Specific form(s) or FormList(s) |
 | `keywords` | string / array | `["VendorItemWeapon"]` | EditorID keywords (array = must have ALL) |
 | `isStolen` | bool | `true` | Owned by someone other than the player |
 | `isFavorited` | bool | `true` | Marked as favorite |
 | `isQuestItem` | bool | `true` | Part of an active quest |
 | `goldValue` | number / range | `{"min": 100}` | Item value in gold |
 | `weight` | number / range | `{"max": 5.0}` | Item weight |
+| `conditionPerk` | string | `"MyMod.esp\|0x800"` | Perk whose conditions are evaluated against the player |
 
 **Supported `formType` values:**
 `Ammo`, `Armor`, `Book`, `Ingredient`, `Key`, `MiscItem`, `Potion`, `Scroll`, `SoulGem`, `Weapon`
@@ -92,6 +99,18 @@ FormIDs use the format `"PluginName|0xRawID"`:
 ```
 
 The plugin name is resolved at runtime via the load order.
+
+**FormList support:** If a FormID resolves to a `BGSListForm`, all forms inside it are expanded recursively. This lets you reference a FormList and match any item contained within it.
+
+### Condition Perk
+
+Evaluates a perk's conditions against the player at runtime. Create a perk in xEdit/CK with your desired conditions, then reference it:
+
+```json
+"conditionPerk": "MyMod.esp|0x800"
+```
+
+The perk's `perkConditions` are evaluated with the player as both subject and target. Useful for checking game state (global values, quest stages, actor values, etc.) that can't be expressed through other match fields.
 
 ---
 
@@ -190,30 +209,40 @@ These match against extra data attached to items at runtime.
 
 ### Enchantment
 
-Matches items with an enchantment. Pass `{}` to match any enchanted item, or specify effect matchers:
+Matches items with an enchantment. Pass `{}` to match any enchanted item, or add `magicEffect` to filter by effects and `isKnown` to check if the player has learned the enchantment:
 
 ```json
 "enchantment": {}
 "enchantment": {
-  "school": "Destruction",
-  "primaryValue": "Health"
+  "isKnown": false,
+  "magicEffect": {
+    "school": "Destruction",
+    "primaryValue": "Health"
+  }
 }
 ```
+
+| Sub-field | Type | Description |
+|---|---|---|
+| `isKnown` | bool | Whether the player has learned (disenchanted) this enchantment |
+| `magicEffect` | object | Effect matchers (see below) |
 
 Checks ExtraEnchantment first (player-applied), then falls back to the base form enchantment.
 
 ### Poison
 
-Matches items with an applied poison:
+Matches items with an applied poison. Use `magicEffect` to filter by effects:
 
 ```json
 "poison": {}
-"poison": { "school": "Restoration" }
+"poison": {
+  "magicEffect": { "school": "Restoration" }
+}
 ```
 
 ### Magic Effect
 
-use for potions and scrolls where you want to match their inherent effects:
+Use for potions and scrolls where you want to match their inherent effects directly:
 
 ```json
 "magicEffect": { "archetype": "ValueModifier", "primaryValue": "Health" }
@@ -231,7 +260,7 @@ Matches items with tempering (ExtraHealth):
 
 ## Effect Matchers
 
-Used inside `enchantment`, `poison`, and `magicEffect`. All matchers use **AND** logic — the condition passes if **any single effect** on the item satisfies **all** specified matchers.
+Used inside `magicEffect` (standalone or within `enchantment`/`poison`). All matchers use **AND** logic — the condition passes if **any single effect** on the item satisfies **all** specified matchers.
 
 | Field | Type | Description |
 |---|---|---|
@@ -308,7 +337,9 @@ This matches all weapons that are **not** enchanted. Multiple conditions inside 
   "icon": { "source": "DIII/elements.swf", "label": "FireIcon" },
   "match": {
     "formType": "Weapon",
-    "enchantment": { "resistance": "FireResist" }
+    "enchantment": {
+      "magicEffect": { "resistance": "FireResist" }
+    }
   }
 }
 ```
@@ -365,6 +396,51 @@ This matches all weapons that are **not** enchanted. Multiple conditions inside 
 }
 ```
 
+### Replace the vanilla enchantment icon
+```json
+{
+  "icon": {
+    "source": "DIII/custom.swf",
+    "label": "CustomEnchantIcon",
+    "replace": "enchantIcon"
+  },
+  "match": {
+    "enchantment": {}
+  }
+}
+```
+
+### Unknown enchantment indicator
+```json
+{
+  "icon": { "source": "DIII/status.swf", "label": "UnknownEnchantIcon" },
+  "match": {
+    "enchantment": { "isKnown": false }
+  }
+}
+```
+
+### Items from a FormList
+```json
+{
+  "icon": { "source": "DIII/custom.swf", "label": "SpecialItemIcon" },
+  "match": {
+    "formId": "MyMod.esp|0x800"
+  }
+}
+```
+If `0x800` is a FormList, all forms inside it are matched.
+
+### Condition perk check
+```json
+{
+  "icon": { "source": "DIII/custom.swf", "label": "ConditionalIcon" },
+  "match": {
+    "conditionPerk": "MyMod.esp|0x900"
+  }
+}
+```
+
 ---
 
 ## Schema Validation
@@ -377,5 +453,3 @@ Point your editor to the included schema for autocompletion and validation:
   "rules": [ ... ]
 }
 ```
-
-The schema file is located at `Data/SKSE/Plugins/DIII/schema.json`.

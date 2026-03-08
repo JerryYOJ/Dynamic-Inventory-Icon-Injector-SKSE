@@ -97,6 +97,46 @@ namespace Config {
 	}
 
 	// ========================================================================
+	// Builder functions — Player Level
+	// ========================================================================
+
+	std::unique_ptr<Condition> ConditionParser::BuildConditionPerk(const Json::Value& val, RE::FormType) {
+		if (val.isString()) {
+			auto id = ParseUtil::ParseFormID(val.asString());
+			if (id == 0)
+				return nullptr;
+			auto* perk = RE::TESForm::LookupByID<RE::BGSPerk>(id);
+			if (!perk) {
+				logger::warn("conditionPerk: FormID {:08X} is not a valid Perk", id);
+				return nullptr;
+			}
+			return std::make_unique<PerkConditionCondition>(perk);
+		}
+		else if (val.isArray()) {
+			auto anyOf = std::make_unique<AnyOfCondition>();
+
+			for (const auto& elem : val) {
+				if (elem.isString()) {
+					auto id = ParseUtil::ParseFormID(elem.asString());
+					if (id == 0)
+						return nullptr;
+					auto* perk = RE::TESForm::LookupByID<RE::BGSPerk>(id);
+					if (!perk) {
+						logger::warn("conditionPerk: FormID {:08X} is not a valid Perk", id);
+						return nullptr;
+					}
+
+					if (perk)
+						anyOf->Add(std::make_unique<PerkConditionCondition>(perk));
+				}
+			}
+
+			return anyOf;
+		}
+		return nullptr;
+	}
+
+	// ========================================================================
 	// Builder functions — Item level
 	// ========================================================================
 
@@ -220,29 +260,70 @@ namespace Config {
 		return std::make_unique<NotCondition>(std::move(allOf));
 	}
 
-	std::unique_ptr<Condition>
-	ConditionParser::BuildEnchantment(const Json::Value &val, RE::FormType) {
-		auto cond = std::make_unique<EnchantmentCondition>();
-
+	std::unique_ptr<Condition> ConditionParser::BuildMagicEffect(const Json::Value& val, RE::FormType) {
+		auto cond = std::make_unique<MagicItemCondition>();
 		if (val.isObject()) {
-			for (const auto &name : val.getMemberNames()) {
+			for (const auto& name : val.getMemberNames()) {
 				auto matcher = BuildEffectMatcher(name, val[name]);
 				if (matcher)
 					cond->AddMatcher(std::move(matcher));
 			}
 		}
+		return cond;
+	}
+
+	std::unique_ptr<Condition> ConditionParser::BuildEnchantment(const Json::Value &val, RE::FormType type) {
+		auto cond = std::make_unique<AllOfCondition>();
+
+		if (val.isObject()) {
+			auto enchCond = std::make_unique<EnchantmentCondition>();
+
+			if (val.isMember("isKnown") && val["isKnown"].isBool()) {
+				auto knownCond = std::make_unique<BoolCondition>(
+					val["isKnown"].asBool(), [](RE::InventoryEntryData* e) -> bool {
+						if (!e) return false;
+						auto* ench = e->GetEnchantment();
+						if (!ench) return false;
+						if (RE::TESDataHandler::GetSingleton()->IsGeneratedID(ench->GetFormID())) return true;
+						auto* base = ench->data.baseEnchantment
+							? ench->data.baseEnchantment : ench;
+						return base->GetKnown();
+					});
+				cond->Add(std::move(knownCond));
+			}
+			if (val.isMember("magicEffect") && val["magicEffect"].isObject()) {
+				
+				auto&& mgef = val["magicEffect"];
+
+				for (const auto& name : mgef.getMemberNames()) {
+					auto matcher = BuildEffectMatcher(name, mgef[name]);
+					if (matcher)
+						enchCond->AddMatcher(std::move(matcher));
+				}
+			}
+
+			cond->Add(std::move(enchCond));
+		}
 
 		return cond;
 	}
 
-	std::unique_ptr<Condition> ConditionParser::BuildPoison(const Json::Value &val, RE::FormType) {
+	std::unique_ptr<Condition> ConditionParser::BuildPoison(const Json::Value &val, RE::FormType type) {
 		auto cond = std::make_unique<PoisonCondition>();
 
 		if (val.isObject()) {
-			for (const auto &name : val.getMemberNames()) {
-				auto matcher = BuildEffectMatcher(name, val[name]);
-				if (matcher)
-					cond->AddMatcher(std::move(matcher));
+			
+			if (val.isMember("magicEffect") && val["magicEffect"].isObject()) {
+				//auto enchCond = std::make_unique<PoisonCondition>();
+
+				auto&& mgef = val["magicEffect"];
+				for (const auto& name : mgef.getMemberNames()) {
+					auto matcher = BuildEffectMatcher(name, mgef[name]);
+					if (matcher)
+						cond->AddMatcher(std::move(matcher));
+				}
+
+				//cond->Add(std::move(enchCond));
 			}
 		}
 
@@ -499,6 +580,7 @@ namespace Config {
 				[](const Json::Value &v, RE::FormType) -> std::unique_ptr<Condition> {
 					return BuildNumberProperty(v, GetWeight);
 				}},
+			{"conditionPerk", BuildConditionPerk},
 			// Weapon
 			{"weaponType",
 				[](const Json::Value &v, RE::FormType) -> std::unique_ptr<Condition> {
@@ -670,7 +752,7 @@ namespace Config {
 			{"poison", BuildPoison},
 			{"tempered", BuildTempered},
 			{"magicEffect",
-				BuildEnchantment}, // Potion/Scroll uses same effect iteration
+				BuildMagicEffect},
 			// Special
 			{"not", BuildNot},
 		};
@@ -693,8 +775,7 @@ namespace Config {
 		IconData iconData;
 		iconData.source = icon.get("source", "").asString();
 		iconData.label = icon.get("label", "").asString();
-		// iconData.priority = icon.get("priority", 0).asInt();  // TODO: priority
-		// system TBD
+		iconData.replace = icon.get("replace", "").asString();
 		parsed.SetIcon(std::move(iconData));
 
 		// Determine form type for context-sensitive fields

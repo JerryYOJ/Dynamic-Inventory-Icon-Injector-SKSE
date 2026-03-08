@@ -48,6 +48,21 @@ namespace Config {
 		std::vector<RE::FormID> _ids;
 	};
 
+	class PerkConditionCondition final : public Condition {
+	public:
+		PerkConditionCondition(RE::BGSPerk* perk) : _perk(perk) {}
+		bool Match(RE::InventoryEntryData*) const override {
+			if (!_perk)
+				return false;
+			auto* player = RE::PlayerCharacter::GetSingleton();
+			if (!player)
+				return false;
+			return _perk->perkConditions.IsTrue(player, player);
+		}
+	private:
+		RE::BGSPerk* _perk;
+	};
+
 	class RangeCondition final : public Condition {
 	public:
 		using Getter = float (*)(RE::InventoryEntryData *);
@@ -156,32 +171,56 @@ namespace Config {
 		std::vector<std::unique_ptr<Condition>> _conditions;
 	};
 
+	class AllOfCondition final : public Condition {
+	public:
+		void Add(std::unique_ptr<Condition> cond) {
+			_conditions.push_back(std::move(cond));
+		}
+
+		bool Match(RE::InventoryEntryData* entry) const override {
+			for (const auto& cond : _conditions) {
+				if (!cond->Match(entry))
+					return false;
+			}
+			return true;
+		}
+
+	private:
+		std::vector<std::unique_ptr<Condition>> _conditions;
+	};
+
 	// ========================================================================
-	// Object-field conditions (enchantment / poison / tempered)
+	// Object-field conditions (potion / enchantment / poison / tempered)
 	// ========================================================================
 
-	class EnchantmentCondition final : public Condition {
+	class MagicItemCondition : public Condition {
 	public:
 		void AddMatcher(std::unique_ptr<EffectMatcher> matcher) {
 			_matchers.push_back(std::move(matcher));
 		}
 
-		bool Match(RE::InventoryEntryData *entry) const override;
+		bool Match(RE::InventoryEntryData* entry) const override;
 
-	private:
+	protected:
 		std::vector<std::unique_ptr<EffectMatcher>> _matchers;
 	};
 
-	class PoisonCondition final : public Condition {
+	class EnchantmentCondition final : public MagicItemCondition {
 	public:
-		void AddMatcher(std::unique_ptr<EffectMatcher> matcher) {
-			_matchers.push_back(std::move(matcher));
-		}
 
 		bool Match(RE::InventoryEntryData *entry) const override;
 
 	private:
-		std::vector<std::unique_ptr<EffectMatcher>> _matchers;
+		
+	};
+
+	class PoisonCondition final : public MagicItemCondition {
+	public:
+
+		bool Match(RE::InventoryEntryData *entry) const override;
+
+	private:
+		
 	};
 
 	class TemperedCondition final : public Condition {

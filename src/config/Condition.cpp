@@ -82,35 +82,59 @@ namespace Config {
 	}
 
 	// ========================================================================
-	// EnchantmentCondition
+	// Two Helpers
 	// ========================================================================
 
-	static RE::EnchantmentItem *GetEnchantment(RE::InventoryEntryData *entry) {
-		if (!entry || !entry->object)
-			return nullptr;
-		
-		return entry->GetEnchantment();
-	}
+	static bool MatchEffects(const std::vector<std::unique_ptr<EffectMatcher>>& matchers, const RE::BSTArray<RE::Effect*>& effects) {
+		if (matchers.empty())
+			return true; // {} = just "is xxx"
 
-	bool EnchantmentCondition::Match(RE::InventoryEntryData *entry) const {
-		auto *enchantment = GetEnchantment(entry);
-		if (!enchantment)
-			return false;
-		if (_matchers.empty())
-			return true; // {} = just "is enchanted"
-
-		for (auto &effect : enchantment->effects) {
+		for (auto& effect : effects) {
 			if (!effect)
 				continue;
 
 			bool allMatch =
-					std::all_of(_matchers.begin(), _matchers.end(),
-											[effect](const auto &m) { return m->Match(effect); });
+				std::all_of(matchers.begin(), matchers.end(),
+					[effect](const auto& m) { return m->Match(effect); });
 
 			if (allMatch)
 				return true;
 		}
 		return false;
+	}
+
+	static RE::EnchantmentItem* GetEnchantment(RE::InventoryEntryData* entry) {
+		if (!entry || !entry->object)
+			return nullptr;
+
+		return entry->GetEnchantment();
+	}
+
+	// ========================================================================
+	// MagicItemCondition
+	// ========================================================================
+
+	bool MagicItemCondition::Match(RE::InventoryEntryData *entry) const {
+		if (!entry || !entry->GetObject())
+			return false;
+		
+		auto* item = entry->GetObject()->As<RE::MagicItem>();
+		if(!item)
+			return false;
+
+		return MatchEffects(_matchers, item->effects);
+	}
+
+	// ========================================================================
+	// EnchantmentCondition
+	// ========================================================================
+	
+	bool EnchantmentCondition::Match(RE::InventoryEntryData *entry) const {
+		auto *enchantment = GetEnchantment(entry);
+		if (!enchantment)
+			return false;
+		
+		return MatchEffects(_matchers, enchantment->effects);
 	}
 
 	// ========================================================================
@@ -129,21 +153,7 @@ namespace Config {
 			if (!extraPoison || !extraPoison->poison)
 				continue;
 
-			if (_matchers.empty())
-				return true; // {} = just "is poisoned"
-
-			auto *poison = extraPoison->poison;
-			for (auto &effect : poison->effects) {
-				if (!effect)
-					continue;
-
-				bool allMatch =
-						std::all_of(_matchers.begin(), _matchers.end(),
-												[effect](const auto &m) { return m->Match(effect); });
-
-				if (allMatch)
-					return true;
-			}
+			return MatchEffects(_matchers, extraPoison->poison->effects);
 		}
 		return false;
 	}

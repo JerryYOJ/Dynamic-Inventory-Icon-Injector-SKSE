@@ -44,6 +44,10 @@
 				"label": {
 					"type": "string",
 					"description": "Export name inside the SWF"
+				},
+				"replace": {
+					"type": "string",
+					"description": "Vanilla icon instance name to replace (e.g. enchantIcon, poisonIcon). If empty/omitted, icon is appended."
 				}
 			}
 		},
@@ -67,7 +71,7 @@
 			]
 		},
 		"formIdValue": {
-			"description": "FormID as \"PluginName|0xRawID\", or array of them",
+			"description": "FormID as \"PluginName|0xRawID\", or array of them. If a FormID resolves to a FormList, its contents are expanded recursively.",
 			"oneOf": [
 				{
 					"type": "string",
@@ -313,6 +317,11 @@
 				"weight": {
 					"$ref": "#/$defs/numberOrRange"
 				},
+				"conditionPerk": {
+					"description": "Perk FormID whose conditions are evaluated against the player at runtime",
+					"type": "string",
+					"pattern": "^.+\\|0x[0-9A-Fa-f]+$"
+				},
 				"weaponType": {
 					"type": "string",
 					"enum": [
@@ -420,10 +429,28 @@
 					"type": "boolean"
 				},
 				"enchantment": {
-					"$ref": "#/$defs/effectMatchers"
+					"type": "object",
+					"description": "Match enchanted items. Pass {} to match any enchanted item.",
+					"properties": {
+						"isKnown": {
+							"type": "boolean",
+							"description": "Whether the player has learned (disenchanted) this enchantment"
+						},
+						"magicEffect": {
+							"$ref": "#/$defs/effectMatchers"
+						}
+					},
+					"additionalProperties": false
 				},
 				"poison": {
-					"$ref": "#/$defs/effectMatchers"
+					"type": "object",
+					"description": "Match poisoned items. Pass {} to match any poisoned item.",
+					"properties": {
+						"magicEffect": {
+							"$ref": "#/$defs/effectMatchers"
+						}
+					},
+					"additionalProperties": false
 				},
 				"tempered": {
 					"type": "object",

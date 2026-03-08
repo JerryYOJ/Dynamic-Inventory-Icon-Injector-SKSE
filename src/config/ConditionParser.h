@@ -19,12 +19,14 @@ namespace Config {
 
 		static const std::map<std::string, Builder, CaseInsensitiveCompare> BuilderMap;
 
+		static std::unique_ptr<Condition> BuildConditionPerk(const Json::Value& val, RE::FormType);
 		static std::unique_ptr<Condition> BuildFormType(const Json::Value &val, RE::FormType);
 		static std::unique_ptr<Condition> BuildFormId(const Json::Value &val, RE::FormType);
 		static std::unique_ptr<Condition> BuildKeywords(const Json::Value &val, RE::FormType);
 		static std::unique_ptr<Condition> BuildBoolProperty(const Json::Value &val, bool (*getter)(RE::InventoryEntryData *));
 		static std::unique_ptr<Condition> BuildNumberProperty(const Json::Value &val, float (*getter)(RE::InventoryEntryData *));
 		static std::unique_ptr<Condition> BuildNot(const Json::Value &val, RE::FormType formType);
+		static std::unique_ptr<Condition> BuildMagicEffect(const Json::Value& val, RE::FormType);
 		static std::unique_ptr<Condition> BuildEnchantment(const Json::Value &val, RE::FormType);
 		static std::unique_ptr<Condition> BuildPoison(const Json::Value &val, RE::FormType);
 		static std::unique_ptr<Condition> BuildTempered(const Json::Value &val, RE::FormType);
