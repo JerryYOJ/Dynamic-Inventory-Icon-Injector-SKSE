@@ -278,16 +278,28 @@ namespace Config {
 		if (val.isObject()) {
 			auto enchCond = std::make_unique<EnchantmentCondition>();
 
+			if (val.isMember("canLearn") && val["canLearn"].isBool()) {
+				auto canLearnCond = std::make_unique<BoolCondition>(
+					val["canLearn"].asBool(), [](RE::InventoryEntryData* e) -> bool {
+						if (!e) return false;
+						auto* ench = e->GetEnchantment();
+						if (!ench) return false;
+						if (RE::TESDataHandler::GetSingleton()->IsGeneratedID(ench->GetFormID())) return false; //Player created, cant learn
+						auto* base = ench->data.baseEnchantment;
+						return base != nullptr;
+					});
+				cond->Add(std::move(canLearnCond));
+			}
 			if (val.isMember("isKnown") && val["isKnown"].isBool()) {
 				auto knownCond = std::make_unique<BoolCondition>(
 					val["isKnown"].asBool(), [](RE::InventoryEntryData* e) -> bool {
 						if (!e) return false;
 						auto* ench = e->GetEnchantment();
 						if (!ench) return false;
-						if (RE::TESDataHandler::GetSingleton()->IsGeneratedID(ench->GetFormID())) return true;
-						auto* base = ench->data.baseEnchantment
-							? ench->data.baseEnchantment : ench;
-						return base->GetKnown();
+						if (RE::TESDataHandler::GetSingleton()->IsGeneratedID(ench->GetFormID())) return true; //Player created, must known
+						auto* base = ench->data.baseEnchantment; 
+						if(base) return base->GetKnown(); // Has base, can be learned
+						return false; // No base, cant be learned, must be unknown
 					});
 				cond->Add(std::move(knownCond));
 			}

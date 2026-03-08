@@ -47,7 +47,15 @@
 				},
 				"replace": {
 					"type": "string",
-					"description": "Vanilla icon instance name to replace (e.g. enchantIcon, poisonIcon). If empty/omitted, icon is appended."
+					"description": "Vanilla icon instance name to replace. If empty/omitted, icon is appended.",
+					"enum": [
+						"bestIcon",
+						"favoriteIcon",
+						"poisonIcon",
+						"stolenIcon",
+						"enchIcon",
+						"readIcon"
+					]
 				}
 			}
 		},
@@ -432,9 +440,13 @@
 					"type": "object",
 					"description": "Match enchanted items. Pass {} to match any enchanted item.",
 					"properties": {
+						"canLearn": {
+							"type": "boolean",
+							"description": "Whether the enchantment can be learned (has a base enchantment; player-created enchantments return false)"
+						},
 						"isKnown": {
 							"type": "boolean",
-							"description": "Whether the player has learned (disenchanted) this enchantment"
+							"description": "Whether the player knows this enchantment (player-created = always true; learnable = base is known; otherwise false)"
 						},
 						"magicEffect": {
 							"$ref": "#/$defs/effectMatchers"

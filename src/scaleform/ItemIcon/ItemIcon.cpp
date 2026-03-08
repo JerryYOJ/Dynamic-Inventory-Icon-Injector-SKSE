@@ -5,6 +5,7 @@
 
 //this global is required to make string_view work dont remove
 std::unordered_map<std::string, std::unordered_set<std::string>> registeredIcons;
+
 std::vector<std::string> registeredExports;
 std::vector<ImportData::loadReq> loadRequest;
 

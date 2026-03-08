@@ -51,7 +51,7 @@ Each rule has two parts:
 |---|---|---|
 | `source` | ✅ | SWF file path relative to `Interface/` |
 | `label` | ✅ | Export name inside the SWF |
-| `replace` | ❌ | Vanilla icon instance name to replace (e.g. `"enchantIcon"`) |
+| `replace` | ❌ | Vanilla icon instance name to replace (`"bestIcon", "favoriteIcon", "poisonIcon", "stolenIcon", "enchIcon", "readIcon"`) |
 
 ### Match
 
@@ -209,11 +209,12 @@ These match against extra data attached to items at runtime.
 
 ### Enchantment
 
-Matches items with an enchantment. Pass `{}` to match any enchanted item, or add `magicEffect` to filter by effects and `isKnown` to check if the player has learned the enchantment:
+Matches items with an enchantment. Pass `{}` to match any enchanted item, or add sub-fields to filter further:
 
 ```json
 "enchantment": {}
 "enchantment": {
+  "canLearn": true,
   "isKnown": false,
   "magicEffect": {
     "school": "Destruction",
@@ -224,7 +225,8 @@ Matches items with an enchantment. Pass `{}` to match any enchanted item, or add
 
 | Sub-field | Type | Description |
 |---|---|---|
-| `isKnown` | bool | Whether the player has learned (disenchanted) this enchantment |
+| `canLearn` | bool | Whether the enchantment can be learned (has a base enchantment; player-created enchantments return `false`) |
+| `isKnown` | bool | Whether the player knows this enchantment (player-created = always `true`; learnable = base is known; otherwise `false`) |
 | `magicEffect` | object | Effect matchers (see below) |
 
 Checks ExtraEnchantment first (player-applied), then falls back to the base form enchantment.
