@@ -37,12 +37,7 @@ namespace Config {
 	public:
 		FormIdCondition(std::vector<RE::FormID> ids) : _ids(std::move(ids)) {}
 
-		bool Match(RE::InventoryEntryData *entry) const override {
-			if (!entry || !entry->object)
-				return false;
-			return std::find(_ids.begin(), _ids.end(), entry->object->formID) !=
-						_ids.end();
-		}
+		bool Match(RE::InventoryEntryData* entry) const override;
 
 	private:
 		std::vector<RE::FormID> _ids;

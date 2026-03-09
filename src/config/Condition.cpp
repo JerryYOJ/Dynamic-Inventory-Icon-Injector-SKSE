@@ -37,6 +37,38 @@ namespace Config {
 	};
 
 	// ========================================================================
+	// FormIdCondition
+	// ========================================================================
+	static void CollectFromFormList(RE::BGSListForm* formList, std::unordered_set<RE::FormID>& out) {
+		if (!formList)
+			return;
+		for (auto* form : formList->forms) {
+			if (!form)
+				continue;
+			if (auto* nestedList = form->As<RE::BGSListForm>()) {
+				CollectFromFormList(nestedList, out);
+			}
+			else {
+				out.insert(form->formID);
+			}
+		}
+	}
+
+	bool FormIdCondition::Match(RE::InventoryEntryData* entry) const {
+		if (!entry || !entry->object)
+			return false;
+
+		std::unordered_set<RE::FormID> listForms;
+		for (auto&& it : _ids) {
+			auto* form = RE::TESForm::LookupByID(it);
+			if (form->Is(RE::BGSListForm::FORMTYPE)) CollectFromFormList(form->As<RE::BGSListForm>(), listForms);
+			else if (entry->GetObject()->GetFormID() == it) return true;
+		}
+
+		return listForms.contains(entry->GetObject()->GetFormID());
+	}
+	
+	// ========================================================================
 	// HasKeywordCondition
 	// ========================================================================
 

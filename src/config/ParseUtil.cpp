@@ -1,22 +1,6 @@
 #include "ParseUtil.h"
 
 namespace Config {
-	static void CollectFromFormList(RE::BGSListForm* formList, std::vector<RE::FormID>& out) {
-		if (!formList)
-			return;
-		for (auto* form : formList->forms) {
-			if (!form)
-				continue;
-			if (auto* nestedList = form->As<RE::BGSListForm>()) {
-				CollectFromFormList(nestedList, out);
-			}
-			else {
-				out.push_back(form->formID);
-			}
-		}
-	}
-
-
 	RE::FormID ParseUtil::ParseFormID(const std::string &a_identifier) {
 		std::istringstream ss{a_identifier};
 		std::string plugin, id;
@@ -58,18 +42,14 @@ namespace Config {
 		if (a_value.isString()) {
 			auto id = ParseFormID(a_value.asString());
 			if (id != 0) {
-				auto* form = RE::TESForm::LookupByID<RE::BGSListForm>(id);
-				if(form) CollectFromFormList(form, result);
-				else result.push_back(id);
+				result.push_back(id);
 			}
 		} else if (a_value.isArray()) {
 			for (const auto &elem : a_value) {
 				if (elem.isString()) {
 					auto id = ParseFormID(elem.asString());
 					if (id != 0) {
-						auto* form = RE::TESForm::LookupByID<RE::BGSListForm>(id);
-						if (form) CollectFromFormList(form, result);
-						else result.push_back(id);
+						result.push_back(id);
 					}
 				}
 			}
