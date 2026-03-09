@@ -285,6 +285,9 @@ namespace Config {
 						auto* ench = e->GetEnchantment();
 						if (!ench) return false;
 						if (RE::TESDataHandler::GetSingleton()->IsGeneratedID(ench->GetFormID())) return false; //Player created, cant learn
+						
+						auto* Keywd = RE::BGSDefaultObjectManager::GetSingleton()->GetObject<RE::BGSKeyword>(RE::DEFAULT_OBJECT::kKeywordDisallowEnchanting);
+						if (e->GetObject()->As<RE::BGSKeywordForm>() && e->GetObject()->As<RE::BGSKeywordForm>()->HasKeyword(Keywd)) return false; //disallow enchanting keyword, cant learn
 						auto* base = ench->data.baseEnchantment;
 						return base != nullptr;
 					});

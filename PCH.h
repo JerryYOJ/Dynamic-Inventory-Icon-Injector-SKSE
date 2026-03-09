@@ -2,6 +2,8 @@
 
 // This file is required.
 
+#undef ENABLE_SKYRIM_VR
+
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
 
