@@ -2,12 +2,20 @@
 
 #include "Rule.h"
 
-
 namespace Config {
-    class ConfigManager : public SINGLETON<ConfigManager> {
+    class ConfigManager : public SINGLETON<ConfigManager>, public DIII::IAPI {
         friend SINGLETON;
 
     public:
+        virtual bool RegisterCondition(
+            const char* name,
+            DIII::ConditionBuilder builder
+        ) override;
+
+        virtual uint32_t GetVersion() const override {
+            return 1;
+        }
+
         void LoadConfigs();
 
         // Returns all matching icons for an item
@@ -22,6 +30,8 @@ namespace Config {
         ConfigManager() = default;
 
         void LoadFile(const std::filesystem::path &path);
+
+        void LoadExternalConditions();
 
         std::vector<Rule> _rules;
     };

@@ -174,16 +174,15 @@ namespace Config {
 			if (kw)
 				return std::make_unique<HasKeywordCondition>(kw);
 		} else if (val.isArray()) {
-			// Multiple keywords = AND (item must have all of them)
-			// Currently we only add the first; caller handles adding multiple
-			// by iterating the array in ParseRule
+			auto cond = std::make_unique<AllOfCondition>();
 			for (const auto &elem : val) {
 				if (elem.isString()) {
 					auto *kw = resolveKeyword(elem.asString());
 					if (kw)
-						return std::make_unique<HasKeywordCondition>(kw);
+						cond->Add(std::move(std::make_unique<HasKeywordCondition>(kw)));
 				}
 			}
+			return cond;
 		}
 		return nullptr;
 	}
@@ -569,7 +568,7 @@ namespace Config {
 	// Builder map
 	// ========================================================================
 
-	const std::map<std::string, ConditionParser::Builder, CaseInsensitiveCompare>
+	std::map<std::string, ConditionParser::Builder, CaseInsensitiveCompare>
 		ConditionParser::BuilderMap = {
 			// Common
 			{"formType", BuildFormType},
@@ -803,18 +802,6 @@ namespace Config {
 		for (const auto &name : match.getMemberNames()) {
 			if (name.empty() || name[0] == '$')
 				continue;
-
-			// Handle keywords array specially — each keyword is a separate condition
-			// (AND)
-			if (name == "keywords" && match[name].isArray()) {
-				for (const auto &elem : match[name]) {
-					Json::Value single = elem;
-					auto cond = BuildKeywords(single, formType);
-					if (cond)
-						parsed.AddCondition(std::move(cond));
-				}
-				continue;
-			}
 
 			if (auto it = BuilderMap.find(name); it != BuilderMap.end()) {
 				auto cond = it->second(match[name], formType);

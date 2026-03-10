@@ -3,15 +3,11 @@
 #include "EffectMatcher.h"
 
 namespace Config {
-// ========================================================================
-// Base class — matches against an inventory entry
-// ========================================================================
+	// ========================================================================
+	// Base class — matches against an inventory entry
+	// ========================================================================
 
-	class Condition {
-	public:
-		virtual ~Condition() = default;
-		[[nodiscard]] virtual bool Match(RE::InventoryEntryData *entry) const = 0;
-	};
+	using Condition = DIII::ICondition;
 
 	// ========================================================================
 	// Generic matchers

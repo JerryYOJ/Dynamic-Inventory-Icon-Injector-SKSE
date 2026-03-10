@@ -9,6 +9,8 @@
 
 #include "src/RE/Offsets.Ext.h"
 
+#include "api/DIII_API.h"
+
 #include <unordered_map>
 #include <unordered_set>
 
@@ -58,6 +60,14 @@ protected:
 
     HookTemplate& operator=(const HookTemplate&) = delete;
     HookTemplate& operator=(HookTemplate&&) = delete;
+};
+
+struct CaseInsensitiveCompare {
+    bool operator()(const std::string& a, const std::string& b) const {
+        return std::lexicographical_compare(
+            a.begin(), a.end(), b.begin(), b.end(),
+            [](char ca, char cb) { return std::tolower(ca) < std::tolower(cb); });
+    }
 };
 
 #ifdef SKYRIM_AE

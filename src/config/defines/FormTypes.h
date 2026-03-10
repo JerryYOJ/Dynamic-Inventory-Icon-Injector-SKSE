@@ -1,15 +1,6 @@
 #pragma once
 
 namespace Config {
-	// Case-insensitive string comparator for enum maps
-	struct CaseInsensitiveCompare {
-		bool operator()(const std::string &a, const std::string &b) const {
-			return std::lexicographical_compare(
-					a.begin(), a.end(), b.begin(), b.end(),
-					[](char ca, char cb) { return std::tolower(ca) < std::tolower(cb); });
-		}
-	};
-
 	template <typename T>
 	using EnumMap = std::map<std::string, T, CaseInsensitiveCompare>;
 

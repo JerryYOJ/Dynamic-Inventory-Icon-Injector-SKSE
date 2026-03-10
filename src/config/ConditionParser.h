@@ -5,19 +5,18 @@
 #include <json/json.h>
 
 namespace Config {
-	struct CaseInsensitiveCompare;
-
 	class ConditionParser {
+		friend class ConfigManager;
 	public:
 		ConditionParser() = delete;
 
 		static Rule ParseRule(const Json::Value &a_rule);
 
-	private:
+	protected:
 		// Item-level condition builders
-		using Builder = std::unique_ptr<Condition> (*)(const Json::Value &value, RE::FormType formType);
+		using Builder = DIII::ConditionBuilder;
 
-		static const std::map<std::string, Builder, CaseInsensitiveCompare> BuilderMap;
+		static std::map<std::string, Builder, CaseInsensitiveCompare> BuilderMap;
 
 		static std::unique_ptr<Condition> BuildConditionPerk(const Json::Value& val, RE::FormType);
 		static std::unique_ptr<Condition> BuildFormType(const Json::Value &val, RE::FormType);

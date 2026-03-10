@@ -4,6 +4,28 @@
 #include <json/json.h>
 
 namespace Config {
+    bool ConfigManager::RegisterCondition(const char* name, DIII::ConditionBuilder builder) {
+        if (!name || !builder) return false;
+
+        if (ConditionParser::BuilderMap.contains(name)) {
+            logger::warn("DIII API: condition '{}' already registered", name);
+            return false;
+        }
+
+        ConditionParser::BuilderMap[name] = builder;
+        logger::info("DIII API: registered '{}'", name);
+        return true;
+    }
+
+    void ConfigManager::LoadExternalConditions() {
+        SKSE::GetMessagingInterface()->Dispatch(
+            DIII::kMessage_GetAPI,
+            static_cast<DIII::IAPI*>(getInstance()),
+            sizeof(DIII::IAPI*),
+            nullptr
+        );
+    }
+
     void ConfigManager::LoadConfigs() {
         const auto dataPath =
             std::filesystem::path{"Data/SKSE/Plugins/DIII"};
@@ -13,8 +35,9 @@ namespace Config {
             return;
         }
 
-        std::size_t fileCount = 0;
+        LoadExternalConditions();
 
+        std::size_t fileCount = 0;
         for (const auto &entry : std::filesystem::directory_iterator(dataPath)) {
             if (entry.is_regular_file() && entry.path().extension() == ".json") {
                 LoadFile(entry.path());
@@ -48,6 +71,9 @@ namespace Config {
             logger::warn("No 'rules' array in {}", path.filename().string());
             return;
         }
+
+        
+
 
         std::size_t added = 0;
         for (const auto &ruleJson : rules) {

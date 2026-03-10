@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.21)
 # Set your project name. This will be the name of your SKSE .dll file.
 project(DynamicInventoryIconInjector VERSION 0.0.1 LANGUAGES CXX)
 
-file(GLOB_RECURSE sources CONFIGURE_DEPENDS ../src/*.cpp ../src/*.h)
+file(GLOB_RECURSE sources CONFIGURE_DEPENDS ../src/*.cpp ../src/*.h ../api/DIII_API.h)
 
 # [END set_project_name]
 

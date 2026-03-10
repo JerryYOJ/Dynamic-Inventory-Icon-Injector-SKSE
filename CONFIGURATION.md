@@ -445,6 +445,81 @@ If `0x800` is a FormList, all forms inside it are matched.
 
 ---
 
+## Developer API
+
+Other SKSE plugins can register custom match fields by listening for DIII's registration event. Include `DIII_API.h` from the `api/` folder in your project.
+
+### Setup
+
+In your plugin's `SKSEPluginLoad`, register a listener:
+
+```cpp
+#include "DIII_API.h"
+
+SKSEPluginLoad(const SKSE::LoadInterface* skse) {
+    SKSE::Init(skse);
+
+    DIII::ListenForRegistration([](SKSE::MessagingInterface::Message* msg) {
+        if (msg->type == DIII::kMessage_GetAPI) {
+            auto* api = static_cast<DIII::IAPI*>(msg->data);
+            api->RegisterCondition("myCustomField",
+                [](const Json::Value& val, RE::FormType type)
+                    -> std::unique_ptr<DIII::ICondition> {
+                    // Parse val and return your condition, or nullptr
+                    return std::make_unique<MyCondition>(val);
+                });
+        }
+    });
+
+    return true;
+}
+```
+
+### ICondition
+
+Your condition must inherit from `DIII::ICondition`:
+
+```cpp
+class MyCondition : public DIII::ICondition {
+public:
+    bool Match(RE::InventoryEntryData* entry) const override {
+        // Return true if the item should get the icon
+    }
+};
+```
+
+### ConditionBuilder
+
+```cpp
+using ConditionBuilder = std::function<
+    std::unique_ptr<ICondition>(const Json::Value& value, RE::FormType type)
+>;
+```
+
+The builder receives the JSON value for your custom field and the `formType` from the rule's `match` block (or `None` if not specified). Return `nullptr` if the value is invalid.
+
+### Using Custom Conditions in JSON
+
+Once registered, your custom field works like any built-in match field:
+
+```json
+{
+  "icon": { "source": "DIII/icons.swf", "label": "MyIcon" },
+  "match": {
+    "formType": "Weapon",
+    "myCustomField": { "someParam": 42 }
+  }
+}
+```
+
+### Notes
+
+- Registration happens during the `kDataLoaded` phase, before JSON configs are parsed. Your custom conditions are available for all config files.
+- Field names are case-insensitive and must not conflict with built-in field names.
+- `DIII::ListenForRegistration` registers a listener for the plugin named `"DynamicInventoryIconInjector"`.
+
+---
+
 ## Schema Validation
 
 Point your editor to the included schema for autocompletion and validation:

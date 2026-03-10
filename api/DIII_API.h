@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <functional>
 #include <json/json.h>
-#include <RE/Skyrim.h>
 
 namespace DIII {
     // Base class other plugins inherit from to create custom conditions
@@ -16,7 +15,7 @@ namespace DIII {
 
     // Builder signature: takes JSON value, returns a condition (or nullptr)
     using ConditionBuilder = std::function<
-        std::unique_ptr<ICondition>(const Json::Value& value)
+        std::unique_ptr<ICondition>(const Json::Value& value, RE::FormType type)
     >;
 
     // The API interface — stable ABI via pure virtual
@@ -39,16 +38,21 @@ namespace DIII {
     // Message type for SKSE messaging
     constexpr uint32_t kMessage_GetAPI = 0xD111;
 
-    // Convenience: call from your plugin's MessagingInterface callback
-    // Returns nullptr if DIII isn't installed
-    inline IAPI* RequestAPI(const SKSE::MessagingInterface* messaging) {
-        IAPI* api = nullptr;
-        messaging->Dispatch(
-            kMessage_GetAPI,
-            &api,
-            sizeof(IAPI*),
-            "DynamicInventoryIconInjector"
-        );
-        return api;
+	//Example of how a plugin would register a condition builder
+    //SKSEPluginLoad(const SKSE::LoadInterface* skse) {
+    //    SKSE::Init(skse);
+    //    DIII::ListenForRegistration([](SKSE::MessagingInterface::Message* msg) {
+    //        if (msg->type == DIII::kMessage_RegisterConditions) {
+    //            auto* api = static_cast<DIII::IAPI*>(msg->data);
+    //            api->RegisterCondition("myCustomField", [](const Json::Value& match, RE::FormType type)
+    //                -> std::unique_ptr<DIII::ICondition> {
+    //                    // build and return your condition
+    //                });
+    //        }
+    //        });
+    //    return true;
+    //}
+    inline void ListenForRegistration(SKSE::MessagingInterface::EventCallback* cb) {
+		SKSE::GetMessagingInterface()->RegisterListener("DynamicInventoryIconInjector", cb);
     }
 }
