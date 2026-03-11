@@ -213,50 +213,61 @@ namespace Config {
 	}
 
 	std::unique_ptr<Condition> ConditionParser::BuildNot(const Json::Value &val, RE::FormType formType) {
-		if (!val.isObject())
-			return nullptr;
+		auto parseNot = [&formType](const Json::Value& val) -> std::unique_ptr<Condition> {
+			// Parse the inner object as conditions, combine with an implicit AND
+			// then negate the whole thing
+			std::vector<std::unique_ptr<Condition>> innerConds;
 
-		// Parse the inner object as conditions, combine with an implicit AND
-		// then negate the whole thing
-		std::vector<std::unique_ptr<Condition>> innerConds;
+			for (const auto& name : val.getMemberNames()) {
+				if (name.empty())
+					continue;
 
-		for (const auto &name : val.getMemberNames()) {
-			if (name.empty())
-				continue;
-
-			if (auto it = BuilderMap.find(name); it != BuilderMap.end()) {
-				auto cond = it->second(val[name], formType);
-				if (cond)
-					innerConds.push_back(std::move(cond));
-			}
-		}
-
-		if (innerConds.empty())
-			return nullptr;
-
-		if (innerConds.size() == 1) {
-			return std::make_unique<NotCondition>(std::move(innerConds[0]));
-		}
-
-		// Multiple inner conditions -> AND them, then negate
-		// We create a temporary rule-like wrapper
-		// Actually, we just negate each individually and combine with AnyOf (De
-		// Morgan) NOT(A AND B) = NOT A OR NOT B But the user likely wants NOT(A AND
-		// B), so we build a custom condition:
-		struct AllOfCondition final : public Condition {
-			std::vector<std::unique_ptr<Condition>> conditions;
-			bool Match(RE::InventoryEntryData *entry) const override {
-				for (const auto &c : conditions) {
-					if (!c->Match(entry))
-						return false;
+				if (auto it = BuilderMap.find(name); it != BuilderMap.end()) {
+					auto cond = it->second(val[name], formType);
+					if (cond)
+						innerConds.push_back(std::move(cond));
 				}
-				return true;
 			}
+
+			if (innerConds.empty())
+				return nullptr;
+
+			if (innerConds.size() == 1) {
+				return std::make_unique<NotCondition>(std::move(innerConds[0]));
+			}
+
+			// Multiple inner conditions -> AND them, then negate
+			// We create a temporary rule-like wrapper
+			// Actually, we just negate each individually and combine with AnyOf (De
+			// Morgan) NOT(A AND B) = NOT A OR NOT B But the user likely wants NOT(A AND
+			// B), so we build a custom condition:
+			struct AllOfCondition final : public Condition {
+				std::vector<std::unique_ptr<Condition>> conditions;
+				bool Match(RE::InventoryEntryData* entry) const override {
+					for (const auto& c : conditions) {
+						if (!c->Match(entry))
+							return false;
+					}
+					return true;
+				}
+			};
+
+			auto allOf = std::make_unique<AllOfCondition>();
+			allOf->conditions = std::move(innerConds);
+			return std::make_unique<NotCondition>(std::move(allOf));
 		};
 
-		auto allOf = std::make_unique<AllOfCondition>();
-		allOf->conditions = std::move(innerConds);
-		return std::make_unique<NotCondition>(std::move(allOf));
+		if (val.isObject()) {
+			return parseNot(val);
+		}
+		else if (val.isArray()) {
+			auto cond = std::make_unique<AllOfCondition>();
+			for (const auto& member : val) {
+				if (member.isObject()) cond->Add(std::move(parseNot(member)));
+			}
+			return cond;
+		}
+		return nullptr;
 	}
 
 	std::unique_ptr<Condition> ConditionParser::BuildMagicEffect(const Json::Value& val, RE::FormType) {

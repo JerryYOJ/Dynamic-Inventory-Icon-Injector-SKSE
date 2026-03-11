@@ -480,8 +480,18 @@
 					"$ref": "#/$defs/effectMatchers"
 				},
 				"not": {
-					"description": "Negates the inner conditions (AND combined, then negated)",
-					"$ref": "#/$defs/match"
+					"description": "Negates inner conditions. Object: AND-combined then negated. Array: each element independently negated, all must pass (AND of NOTs).",
+					"oneOf": [
+						{
+							"$ref": "#/$defs/match"
+						},
+						{
+							"type": "array",
+							"items": {
+								"$ref": "#/$defs/match"
+							}
+						}
+					]
 				}
 			},
 			"additionalProperties": false

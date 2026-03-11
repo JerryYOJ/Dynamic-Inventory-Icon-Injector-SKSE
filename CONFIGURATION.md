@@ -305,7 +305,11 @@ Used inside `magicEffect` (standalone or within `enchantment`/`poison`). All mat
 
 ## Negation
 
-Use `not` to invert a group of conditions:
+Use `not` to invert a group of conditions. It accepts an **object** or an **array of objects**.
+
+### Object form
+
+Multiple conditions inside the object are AND-combined, then the result is negated:
 
 ```json
 {
@@ -319,7 +323,26 @@ Use `not` to invert a group of conditions:
 }
 ```
 
-This matches all weapons that are **not** enchanted. Multiple conditions inside `not` are AND-combined, then the result is negated.
+This matches all weapons that are **not** enchanted.
+
+### Array form
+
+Each array element is independently negated. All negations must pass (AND of NOTs):
+
+```json
+{
+  "icon": { "source": "DIII/icons.swf", "label": "PlainWeaponIcon" },
+  "match": {
+    "formType": "Weapon",
+    "not": [
+      { "enchantment": {} },
+      { "poison": {} }
+    ]
+  }
+}
+```
+
+This matches weapons that are **not** enchanted **and** **not** poisoned. Equivalent to `NOT(enchanted) AND NOT(poisoned)`.
 
 ---
 
