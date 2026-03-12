@@ -61,6 +61,11 @@ namespace Config {
 		std::unordered_set<RE::FormID> listForms;
 		for (auto&& it : _ids) {
 			auto* form = RE::TESForm::LookupByID(it);
+			if (!form) {
+				logger::error("formId resolve error! {}", it);
+				continue;
+			}
+
 			if (form->Is(RE::BGSListForm::FORMTYPE)) CollectFromFormList(form->As<RE::BGSListForm>(), listForms);
 			else if (entry->GetObject()->GetFormID() == it) return true;
 		}

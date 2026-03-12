@@ -263,7 +263,9 @@ namespace Config {
 		else if (val.isArray()) {
 			auto cond = std::make_unique<AllOfCondition>();
 			for (const auto& member : val) {
-				if (member.isObject()) cond->Add(std::move(parseNot(member)));
+				if (member.isObject())
+					if (auto condNot = parseNot(member); condNot) cond->Add(std::move(condNot));
+					else logger::warn("Failed to parse condition in NOT array: {}", member.toStyledString());
 			}
 			return cond;
 		}
