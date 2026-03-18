@@ -757,7 +757,12 @@ namespace Config {
 									if (!e || !e->object)
 										return RE::ActorValue::kNone;
 									auto *book = e->object->As<RE::TESObjectBOOK>();
-									return book ? book->GetSkill() : RE::ActorValue::kNone;
+									return book ? 
+												(
+													(int)book->data.teaches.spell <= (int)RE::ActorValue::kTotal && book->data.teaches.actorValueToAdvance > RE::ActorValue::kNone ? 
+														book->data.teaches.actorValueToAdvance : RE::ActorValue::kNone
+												)
+												: RE::ActorValue::kNone;
 								});
 					}
 					return nullptr;
