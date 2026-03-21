@@ -170,7 +170,16 @@ namespace Config {
 		auto *enchantment = GetEnchantment(entry);
 		if (!enchantment)
 			return false;
-		
+		bool hasVisibleEffect = false;
+		for (auto&& it : enchantment->effects) {
+			if (it->baseEffect &&
+				!it->baseEffect->data.flags.any(RE::EffectSetting::EffectSettingData::Flag::kHideInUI)) {
+				hasVisibleEffect = true;
+				break;
+			}
+		}
+		if (!hasVisibleEffect) return false;
+
 		return MatchEffects(_matchers, enchantment->effects);
 	}
 
