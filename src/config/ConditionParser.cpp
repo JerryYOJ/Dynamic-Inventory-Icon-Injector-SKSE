@@ -300,6 +300,7 @@ namespace Config {
 						
 						auto* Keywd = RE::BGSDefaultObjectManager::GetSingleton()->GetObject<RE::BGSKeyword>(RE::DEFAULT_OBJECT::kKeywordDisallowEnchanting);
 						if (e->GetObject()->As<RE::BGSKeywordForm>() && e->GetObject()->As<RE::BGSKeywordForm>()->HasKeyword(Keywd)) return false; //disallow enchanting keyword, cant learn
+						if (e->GetObject()->Is(RE::TESObjectWEAP::FORMTYPE) && e->GetObject()->As<RE::TESObjectWEAP>()->IsStaff()) return false; //staves cant be disenchanted
 						return true;
 					});
 				cond->Add(std::move(canLearnCond));
