@@ -12,6 +12,7 @@ std::vector<ImportData::loadReq> loadRequest;
 static void InventoryScaleform(RE::GFxMovieView* a_view, RE::GFxValue* a_object, RE::InventoryEntryData* a_item) {
 	
 	auto&& icons = Config::ConfigManager::getInstance()->GetIcons(a_item);
+
 	if (icons.empty()) return;
 
 	RE::GFxValue iconArr;
@@ -78,18 +79,11 @@ public:
 		auto& a_entryField = a_params.args[0];
 		auto& a_entryObject = a_params.args[1];
 		auto& a_state = a_params.args[2];
-
 		if (a_state.IsObject() && a_entryObject.IsObject() && a_entryField.IsObject()) {
-
 			RE::GFxValue list, layout, entryHeight;
 			a_state.GetMember("list", &list);
 			list.GetMember("layout", &layout);
 			layout.GetMember("entryHeight", &entryHeight);
-
-			RE::GFxValue name;
-			a_entryObject.GetMember("text", &name);
-
-
 
 			//Hide previous icons
 			for (auto&& it : registeredExports) {
@@ -118,12 +112,62 @@ public:
 			for (auto&& name : vanillaIcons) {
 				RE::GFxValue icon;
 				a_params.thisPtr->GetMember(name, &icon);
+				/*
+				RE::GFxValue ename;
+				a_entryObject.GetMember("text", &ename);
 
-				if (icon.IsUndefined()) {
-					logger::critical("Failed to find vanilla icon {}???", name);
-					continue;
+				const char* itemName = "<invalid>";
+				if (ename.IsString()) {
+					itemName = ename.GetString();
 				}
 
+				if (strcmp(name, "enchIcon") == 0) {
+					logger::info("============ enchIcon : {} ============", itemName);
+
+					logger::info("Undefined      : {}", icon.IsUndefined());
+					logger::info("Null           : {}", icon.IsNull());
+					logger::info("Object         : {}", icon.IsObject());
+					logger::info("DisplayObject  : {}", icon.IsDisplayObject());
+
+					RE::GFxValue value;
+
+					auto dump = [&](const char* member)
+						{
+							icon.GetMember(member, &value);
+
+							logger::info("{}:", member);
+							logger::info("  Undefined    : {}", value.IsUndefined());
+							logger::info("  Null         : {}", value.IsNull());
+							logger::info("  Bool         : {}", value.IsBool());
+							logger::info("  Number       : {}", value.IsNumber());
+							logger::info("  String       : {}", value.IsString());
+
+							if (value.IsBool())
+								logger::info("  Value        : {}", value.GetBool());
+
+							if (value.IsNumber())
+								logger::info("  Value        : {}", value.GetNumber());
+
+							if (value.IsString())
+								logger::info("  Value        : {}", value.GetString());
+						};
+
+					dump("_visible");
+					dump("_currentframe");
+					dump("_x");
+					dump("_y");
+					dump("_width");
+					dump("_height");
+					dump("_alpha");
+					dump("_xscale");
+					dump("_yscale");
+					dump("_name");
+					dump("_parent");
+					dump("_target");
+
+					logger::info("==============================");
+				}
+				*/
 				icon.SetMember("_visible", true);
 
 				RE::GFxValue currentFrame;
@@ -139,7 +183,6 @@ public:
 			a_entryObject.GetMember("_DIIIIcons", &iconArr);
 
 			if (iconArr.IsUndefined()) return;
-
 			for (std::uint32_t idx = 0, append_idx = 0, size = iconArr.GetArraySize(); idx < size; idx++) {
 				RE::GFxValue iconData;
 				iconArr.GetElement(idx, &iconData);
@@ -149,11 +192,21 @@ public:
 				RE::GFxValue replace;
 				iconData.GetMember("replace", &replace);
 
+				if (!replace.IsUndefined()) {
+					RE::GFxValue nativeIcon;
+					a_params.thisPtr->GetMember(replace.GetString(), &nativeIcon);
+					if (nativeIcon.IsUndefined()) {continue;}
+					RE::GFxValue currentFrame;
+					nativeIcon.GetMember("_currentframe", &currentFrame);
+					if (currentFrame.IsNumber() && currentFrame.GetNumber() == 1) {
+						continue;
+					}
+				}
+
 				RE::GFxValue Icon;
 				a_params.thisPtr->GetMember(iconName.GetString(), &Icon);
 				if (Icon.IsUndefined()) {
 					a_params.thisPtr->AttachMovie(&Icon, iconName.GetString(), iconName.GetString());
-
 					if (Icon.IsUndefined()) {
 						logger::error("Failed to attach icon {}", iconName.GetString());
 						continue;
