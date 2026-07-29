@@ -225,8 +225,9 @@ Matches items with an enchantment. Pass `{}` to match any enchanted item, or add
 
 | Sub-field | Type | Description |
 |---|---|---|
-| `canLearn` | bool | Whether the enchantment can be learned (has a base enchantment; player-created enchantments return `false`) |
+| `canLearn` | bool | Whether the enchantment can be learned. Player-created enchantments, staves, ammunition, and items marked as non-enchantable return `false`. |
 | `isKnown` | bool | Whether the player knows this enchantment (player-created = always `true`; learnable = base is known; otherwise `false`) |
+| `playerEnchanted` | bool | Whether the item has an enchantment created by the player. |
 | `magicEffect` | object | Effect matchers (see below) |
 
 Checks ExtraEnchantment first (player-applied), then falls back to the base form enchantment.
@@ -441,6 +442,16 @@ This matches weapons that are **not** enchanted **and** **not** poisoned. Equiva
   "icon": { "source": "DIII/status.swf", "label": "UnknownEnchantIcon" },
   "match": {
     "enchantment": { "isKnown": false }
+  }
+}
+```
+
+### Player-enchanted item indicator
+```json
+{
+  "icon": { "source": "DIII/status.swf", "label": "PlayerEnchantedIcon" },
+  "match": {
+    "enchantment": { "playerEnchanted": true }
   }
 }
 ```

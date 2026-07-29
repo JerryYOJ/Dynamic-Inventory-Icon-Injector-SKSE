@@ -294,13 +294,16 @@ namespace Config {
 				auto canLearnCond = std::make_unique<BoolCondition>(
 					val["canLearn"].asBool(), [](RE::InventoryEntryData* e) -> bool {
 						if (!e) return false;
+						auto* obj = e->GetObject();
+						if (!obj) return false;
+						if (obj->Is(RE::TESObjectWEAP::FORMTYPE) && obj->As<RE::TESObjectWEAP>()->IsStaff()) return false; //staves cant be disenchanted
+						if (obj->Is(RE::TESAmmo::FORMTYPE)) return false; //ammunitions can't be disenchanted;
+						auto* Keywd = RE::BGSDefaultObjectManager::GetSingleton()->GetObject<RE::BGSKeyword>(RE::DEFAULT_OBJECT::kKeywordDisallowEnchanting);
+						if (obj->As<RE::BGSKeywordForm>() && obj->As<RE::BGSKeywordForm>()->HasKeyword(Keywd)) return false; //disallow enchanting keyword, cant learn
 						auto* ench = e->GetEnchantment();
 						if (!ench) return false;
 						if (RE::TESDataHandler::GetSingleton()->IsGeneratedID(ench->GetFormID())) return false; //Player created, cant learn
-						
-						auto* Keywd = RE::BGSDefaultObjectManager::GetSingleton()->GetObject<RE::BGSKeyword>(RE::DEFAULT_OBJECT::kKeywordDisallowEnchanting);
-						if (e->GetObject()->As<RE::BGSKeywordForm>() && e->GetObject()->As<RE::BGSKeywordForm>()->HasKeyword(Keywd)) return false; //disallow enchanting keyword, cant learn
-						if (e->GetObject()->Is(RE::TESObjectWEAP::FORMTYPE) && e->GetObject()->As<RE::TESObjectWEAP>()->IsStaff()) return false; //staves cant be disenchanted
+
 						return true;
 					});
 				cond->Add(std::move(canLearnCond));
@@ -318,6 +321,17 @@ namespace Config {
 					});
 				cond->Add(std::move(knownCond));
 			}
+			if (val.isMember("playerEnchanted") && val["playerEnchanted"].isBool()) {
+				auto hasEnchPlayCond = std::make_unique<BoolCondition>(
+					val["playerEnchanted"].asBool(), [](RE::InventoryEntryData* e) -> bool {
+						if (!e) return false;
+						auto* ench = e->GetEnchantment();
+						if (!ench) return false;
+						if (RE::TESDataHandler::GetSingleton()->IsGeneratedID(ench->GetFormID())) return true;
+						return false;
+					});
+				cond->Add(std::move(hasEnchPlayCond));
+			}
 			if (val.isMember("magicEffect") && val["magicEffect"].isObject()) {
 				
 				auto&& mgef = val["magicEffect"];
@@ -327,9 +341,9 @@ namespace Config {
 					if (matcher)
 						enchCond->AddMatcher(std::move(matcher));
 				}
+				cond->Add(std::move(enchCond));
 			}
 
-			cond->Add(std::move(enchCond));
 		}
 
 		return cond;
